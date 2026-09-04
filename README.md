@@ -79,3 +79,13 @@ npm run dev
 ```
 
 4. Abre [http://localhost:3000](http://localhost:3000) y recoge el magic link en [http://localhost:8025](http://localhost:8025).
+
+<!-- BEGIN cc:que-se-valora -->
+¡Hola! Aquí te explico qué miraremos con lupa cuando corrijamos tu proyecto de "SaaS Facturación".
+
+## 📋 Qué se valora
+
+En primer lugar, lo que más pesa es que tu aplicación funcione como se espera y cumpla con todo lo que te pedimos en el enunciado. También es muy importante que tu código esté bien escrito y organizado, y que la demo en vídeo muestre claramente lo que has hecho. Por último, aunque con un peso menor, nos fijaremos en cómo has documentado tus decisiones y el proyecto en general.
+
+Recuerda que el detalle del enunciado es lo que manda, y la evaluación no penalizará por cosas que no se pidieron explícitamente.
+<!-- END cc:que-se-valora -->
