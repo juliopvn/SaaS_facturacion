@@ -11,7 +11,6 @@
 # usando un token de GitHub guardado como variable protegida.
 
 stages:
-  - instalar
   - calidad
   - pruebas
   - construir
@@ -29,32 +28,20 @@ variables:
   npm_config_cache: "$CI_PROJECT_DIR/.npm"
   NEXT_TELEMETRY_DISABLED: "1"
 
-# Las dependencias se instalan una vez y viajan al resto de jobs por caché.
-.cache_npm: &cache_npm
-  key:
-    files:
-      - package-lock.json
-  paths:
-    - node_modules/
-    - .npm/
-
-instalar:
-  stage: instalar
-  cache:
-    <<: *cache_npm
-    policy: pull-push
-  script:
-    - npm ci --ignore-scripts=false
-  artifacts:
-    expire_in: 1 hour
-    paths:
-      - node_modules/
-
+# Cada job instala sus propias dependencias. El runner es efímero y su caché no
+# se comparte entre jobs, y `node_modules` pesa demasiado para pasarlo como
+# artefacto (el coordinador lo rechaza con 413), así que `npm ci` en cada job es
+# lo más simple y lo más fiable: ~10 s con la caché de npm caliente.
 .job_con_dependencias:
   cache:
-    <<: *cache_npm
-    policy: pull
-  needs: ["instalar"]
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+    policy: pull-push
+  before_script:
+    - npm ci --prefer-offline --no-audit --no-fund
 
 lint:
   extends: .job_con_dependencias
@@ -137,7 +124,3 @@ build:
   stage: construir
   script:
     - npm run build
-  artifacts:
-    expire_in: 1 day
-    paths:
-      - .next/
