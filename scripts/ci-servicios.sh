@@ -58,7 +58,7 @@ nohup "$DIR/bin/mailhog" >"$DIR/logs/mailhog.log" 2>&1 &
 # entorno del runner: un valor previo distinto haría que el servidor arrancara
 # con otra clave y el cliente recibiera InvalidAccessKeyId.
 : "${AWS_USERNAME:?AWS_USERNAME es obligatoria}" "${AWS_PASSWORD:?AWS_PASSWORD es obligatoria}"
-heredadas="$(env | grep -E '^(RUSTFS|MINIO)_' | cut -d= -f1 | tr '\n' ' ' || true)"
+heredadas="$(env | grep -E '^(RUSTFS|MINIO)_[A-Z0-9_]+=' | cut -d= -f1 | tr '\n' ' ' || true)"
 [ -z "$heredadas" ] || echo "  ⚠ variables heredadas del entorno (se sobrescriben): $heredadas"
 
 RUSTFS_ACCESS_KEY="$AWS_USERNAME" \

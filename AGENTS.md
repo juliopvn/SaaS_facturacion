@@ -32,7 +32,7 @@ enlace mágico en MailHog: <http://localhost:8025>.
 | `npm run build`        | Compilación de producción. Falla ante cualquier error de tipos.      |
 | `npm start`            | Sirve la compilación de producción.                                  |
 | `npm run lint`         | ESLint con la configuración de Next 16.                              |
-| `npm run typecheck`    | `tsc --noEmit`.                                                      |
+| `npm run typecheck`    | `next typegen` y después `tsc --noEmit` (ver nota en §7).            |
 | `npm run format`       | Prettier sobre el código (no toca `README.md`, `PROMT.md` ni este archivo). |
 | `npm run format:check` | Comprueba el formato sin escribir. Es lo que corre en CI.            |
 | `npm run seed`         | Sesga la base con datos de demo. Equivale a `npx tsx scripts/seed.ts`. |
@@ -284,3 +284,30 @@ npm run test:e2e
 
 Y si has tocado dinero, repasa la regla 2.1 una vez más: céntimos enteros en
 todas partes, la división entre 100 solo en `lib/formato.ts`.
+
+---
+
+## 7. Integración continua y despliegue
+
+El detalle de cómo llega un cambio a producción (GitLab → mirror → GitHub → Vercel) y la arquitectura de
+producción están en la sección *Despliegue en producción* del `README.md`. Aquí, lo que necesita saber quien
+toque el pipeline:
+
+- **`typecheck` ejecuta antes `next typegen`.** `PageProps` y `LayoutProps` son tipos que genera Next en
+  `.next/types`; sin generarlos, `tsc` falla en un checkout limpio aunque en tu máquina pase porque ya
+  habías compilado. Si añades una comprobación que use `tsc`, genera los tipos antes.
+- **El runner usa el executor `shell`.** `image:` y `services:` se ignoran y no hay Docker. Los servicios del
+  job E2E los levanta `scripts/ci-servicios.sh` (MongoDB, MailHog y RustFS como procesos, en 127.0.0.1). Es
+  el equivalente de `docker compose up -d` solo para el CI; en local sigue siendo `docker compose`.
+- **Todos los jobs llevan `tags: [cloudrun]`** (en `default:`). Sin la etiqueta se quedan en `pending`.
+- **Cada job hace su `npm ci`.** No pases `node_modules` como artefacto (el coordinador responde `413`) ni
+  cuentes con la caché entre jobs.
+- **En el job E2E, usa `127.0.0.1` y no `localhost`.** `mongod` solo escucha en IPv4 y Node 22 puede resolver
+  `localhost` primero a `::1`.
+- **El build corre sin variables de entorno, a propósito.** Toda la configuración se lee de forma perezosa
+  (`lib/env.ts`); si el build empieza a necesitar variables, algo se está leyendo en tiempo de importación.
+- **Nunca imprimas valores de variables en los logs del CI.** El runner define credenciales propias
+  (`RUSTFS_*`) que aparecen en el entorno; los scripts imprimen solo *nombres*.
+- Cada push a `main` acaba desplegado por Vercel, con o sin pipeline en verde (ver el límite de la Opción B en
+  el README). Espera al verde antes de dar algo por bueno.
+
