@@ -86,7 +86,7 @@ test:e2e:
     MAILHOG_API_URL: "http://127.0.0.1:8025"
     EMAIL_PROVIDER: "mailhog"
     EMAIL_FROM: "Talonario <facturas@localhost>"
-    AWS_URL: "http://127.0.0.1:9000"
+    AWS_URL: "http://127.0.0.1:9100"
     AWS_USERNAME: "rustfsadmin"
     AWS_PASSWORD: "rustfsadmin"
     AWS_REGION: "us-east-1"

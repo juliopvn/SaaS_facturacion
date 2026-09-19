@@ -8,14 +8,16 @@
 # siendo `docker compose up -d`.
 #
 # Los servicios quedan escuchando en 127.0.0.1 y en los mismos puertos que en
-# docker-compose (Mongo 27017, MailHog 1025/8025); RustFS escucha en 9000, que
-# es su puerto nativo (en compose se publica como 9001).
+# docker-compose (Mongo 27017, MailHog 1025/8025). RustFS escucha en 9100 y no
+# en su 9000 nativo: un runner compartido puede tener ya algo en 9000 y no basta
+# con que "responda alguien" en el puerto.
 set -euo pipefail
 
 DIR="${CI_SERVICIOS_DIR:-/tmp/servicios}"
 MONGO_VERSION="${MONGO_VERSION:-8.0.4}"
 MAILHOG_VERSION="${MAILHOG_VERSION:-v1.0.1}"
 RUSTFS_VERSION="${RUSTFS_VERSION:-v1.0.0}"
+RUSTFS_PORT="${RUSTFS_PORT:-9100}"
 
 mkdir -p "$DIR/bin" "$DIR/logs" "$DIR/mongo-datos" "$DIR/rustfs-datos" "$DIR/descargas"
 
@@ -53,7 +55,7 @@ nohup "$DIR/bin/mailhog" >"$DIR/logs/mailhog.log" 2>&1 &
 
 RUSTFS_ACCESS_KEY="${RUSTFS_ACCESS_KEY:-rustfsadmin}" \
 RUSTFS_SECRET_KEY="${RUSTFS_SECRET_KEY:-rustfsadmin}" \
-RUSTFS_ADDRESS="127.0.0.1:9000" \
+RUSTFS_ADDRESS="127.0.0.1:${RUSTFS_PORT}" \
 RUSTFS_CONSOLE_ENABLE="false" \
   nohup "$DIR/bin/rustfs" "$DIR/rustfs-datos" >"$DIR/logs/rustfs.log" 2>&1 &
 
@@ -75,5 +77,27 @@ esperar_puerto() {
 esperar_puerto mongo 27017
 esperar_puerto mailhog 8025
 esperar_puerto mailhog 1025
-esperar_puerto rustfs 9000
+esperar_puerto rustfs "$RUSTFS_PORT"
+
+echo "▶ Comprobando que RustFS acepta las credenciales configuradas…"
+if ! node --input-type=module -e '
+  import { CreateBucketCommand, HeadBucketCommand, S3Client } from "@aws-sdk/client-s3";
+  const cliente = new S3Client({
+    region: process.env.AWS_REGION,
+    endpoint: process.env.AWS_URL,
+    forcePathStyle: true,
+    credentials: { accessKeyId: process.env.AWS_USERNAME, secretAccessKey: process.env.AWS_PASSWORD },
+  });
+  const Bucket = process.env.AWS_BUCKET;
+  try { await cliente.send(new HeadBucketCommand({ Bucket })); }
+  catch { await cliente.send(new CreateBucketCommand({ Bucket })); }
+  console.log("  ✓ bucket " + Bucket + " disponible en " + process.env.AWS_URL);
+'; then
+  echo "  ✗ RustFS rechaza las credenciales o no es el servidor esperado" >&2
+  echo "--- procesos escuchando ---" >&2
+  (ss -ltnp 2>/dev/null || netstat -ltnp 2>/dev/null) | grep -E ":(9000|9100|27017|1025|8025)\b" >&2 || true
+  echo "--- ${DIR}/logs/rustfs.log ---" >&2
+  tail -n 40 "$DIR/logs/rustfs.log" >&2 || true
+  exit 1
+fi
 echo "▶ Servicios listos."
