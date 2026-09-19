@@ -105,8 +105,19 @@ test:e2e:
     # Secreto de usar y tirar: esta base se destruye al acabar el job.
     SESSION_SECRET: "secreto-solo-para-el-pipeline-de-integracion"
   script:
-    # `globalSetup` valida los servicios y siembra; el `webServer` de Playwright
-    # arranca la aplicación.
+    - |
+      echo "### DIAGNOSTICO DEL RUNNER"
+      id; uname -a; nproc; free -m | head -2; df -h / | tail -1
+      grep PRETTY /etc/os-release || true
+      echo "node: $(node -v)  npm: $(npm -v)"
+      for b in docker podman mongod mongosh java go python3 curl wget unzip tar sudo apt-get; do printf "%s: " $b; command -v $b || echo "NO"; done
+      docker info 2>&1 | head -3 || true
+      sudo -n true 2>&1 | head -1 || true
+      echo "--- red ---"
+      for u in https://github.com https://registry.npmjs.org https://playwright.download.prss.microsoft.com https://cdn.playwright.dev https://fastdl.mongodb.org https://repo.mongodb.org; do printf "%s -> " $u; curl -s -o /dev/null -m 10 -w "%{http_code}\n" $u || echo FALLA; done
+      echo "--- playwright browsers ---"
+      ls ~/.cache/ms-playwright 2>&1 | head; ls /ms-playwright 2>&1 | head
+      echo "### FIN DIAGNOSTICO"
     - npm run test:e2e
   artifacts:
     when: always
