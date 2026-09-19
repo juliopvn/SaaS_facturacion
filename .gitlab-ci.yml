@@ -67,57 +67,41 @@ test:unit:
   script:
     - npm run test:unit
 
-# La suite E2E corre contra la misma infraestructura que en local, levantada
-# aquí como servicios del runner. El código no cambia: solo las variables de
-# entorno, que es exactamente lo que demuestra `lib/storage.ts` y `lib/mailer.ts`.
+# La suite E2E corre contra la misma infraestructura que en local. El runner
+# usa el executor `shell` (sin Docker), así que `image:` y `services:` no se
+# aplican: `scripts/ci-servicios.sh` descarga y arranca MongoDB, MailHog y
+# RustFS como procesos, y Playwright instala su propio Chromium.
+# El código de la aplicación no cambia: solo las variables de entorno.
 test:e2e:
   extends: .job_con_dependencias
   stage: pruebas
-  image: mcr.microsoft.com/playwright:v1.63.0-noble
-  services:
-    - name: mongo:7
-      alias: mongo
-    - name: mailhog/mailhog:v1.0.1
-      alias: mailhog
-    - name: rustfs/rustfs:latest
-      alias: rustfs
+  timeout: 25m
   variables:
-    # Los servicios se resuelven por su alias dentro de la red del job.
-    MONGODB_URI: "mongodb://mongo:27017"
+    # 127.0.0.1 y no `localhost`: mongod solo escucha en IPv4 y Node 22 puede
+    # resolver `localhost` primero a ::1.
+    MONGODB_URI: "mongodb://127.0.0.1:27017"
     MONGODB_DB: "saas_facturacion"
-    MAILHOG_HOST: "mailhog"
+    MAILHOG_HOST: "127.0.0.1"
     MAILHOG_PORT: "1025"
-    MAILHOG_API_URL: "http://mailhog:8025"
+    MAILHOG_API_URL: "http://127.0.0.1:8025"
     EMAIL_PROVIDER: "mailhog"
     EMAIL_FROM: "Talonario <facturas@localhost>"
-    AWS_URL: "http://rustfs:9000"
+    AWS_URL: "http://127.0.0.1:9000"
     AWS_USERNAME: "rustfsadmin"
     AWS_PASSWORD: "rustfsadmin"
     AWS_REGION: "us-east-1"
     AWS_BUCKET: "facturacion"
     AWS_FORCE_PATH_STYLE: "true"
-    RUSTFS_ACCESS_KEY: "rustfsadmin"
-    RUSTFS_SECRET_KEY: "rustfsadmin"
-    RUSTFS_VOLUMES: "/data"
     APP_URL: "http://localhost:3000"
     E2E_BASE_URL: "http://localhost:3000"
     DEMO_EMAIL: "demo@talonario.test"
     # Secreto de usar y tirar: esta base se destruye al acabar el job.
     SESSION_SECRET: "secreto-solo-para-el-pipeline-de-integracion"
   script:
-    - |
-      echo "### DIAGNOSTICO DEL RUNNER"
-      id; uname -a; nproc; free -m | head -2; df -h / | tail -1
-      grep PRETTY /etc/os-release || true
-      echo "node: $(node -v)  npm: $(npm -v)"
-      for b in docker podman mongod mongosh java go python3 curl wget unzip tar sudo apt-get; do printf "%s: " $b; command -v $b || echo "NO"; done
-      docker info 2>&1 | head -3 || true
-      sudo -n true 2>&1 | head -1 || true
-      echo "--- red ---"
-      for u in https://github.com https://registry.npmjs.org https://playwright.download.prss.microsoft.com https://cdn.playwright.dev https://fastdl.mongodb.org https://repo.mongodb.org; do printf "%s -> " $u; curl -s -o /dev/null -m 10 -w "%{http_code}\n" $u || echo FALLA; done
-      echo "--- playwright browsers ---"
-      ls ~/.cache/ms-playwright 2>&1 | head; ls /ms-playwright 2>&1 | head
-      echo "### FIN DIAGNOSTICO"
+    - bash scripts/ci-servicios.sh
+    - npx playwright install --with-deps chromium
+    # `globalSetup` valida los servicios y siembra; el `webServer` de Playwright
+    # arranca la aplicación.
     - npm run test:e2e
   artifacts:
     when: always
