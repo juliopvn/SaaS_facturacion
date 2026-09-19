@@ -53,8 +53,16 @@ echo "▶ Arrancando servicios…"
 
 nohup "$DIR/bin/mailhog" >"$DIR/logs/mailhog.log" 2>&1 &
 
-RUSTFS_ACCESS_KEY="${RUSTFS_ACCESS_KEY:-rustfsadmin}" \
-RUSTFS_SECRET_KEY="${RUSTFS_SECRET_KEY:-rustfsadmin}" \
+# Las credenciales del servidor son SIEMPRE las que usará el cliente
+# (AWS_USERNAME / AWS_PASSWORD). No se respeta un RUSTFS_ACCESS_KEY heredado del
+# entorno del runner: un valor previo distinto haría que el servidor arrancara
+# con otra clave y el cliente recibiera InvalidAccessKeyId.
+: "${AWS_USERNAME:?AWS_USERNAME es obligatoria}" "${AWS_PASSWORD:?AWS_PASSWORD es obligatoria}"
+heredadas="$(env | grep -E '^(RUSTFS|MINIO)_' | cut -d= -f1 | tr '\n' ' ' || true)"
+[ -z "$heredadas" ] || echo "  ⚠ variables heredadas del entorno (se sobrescriben): $heredadas"
+
+RUSTFS_ACCESS_KEY="$AWS_USERNAME" \
+RUSTFS_SECRET_KEY="$AWS_PASSWORD" \
 RUSTFS_ADDRESS="127.0.0.1:${RUSTFS_PORT}" \
 RUSTFS_CONSOLE_ENABLE="false" \
   nohup "$DIR/bin/rustfs" "$DIR/rustfs-datos" >"$DIR/logs/rustfs.log" 2>&1 &
