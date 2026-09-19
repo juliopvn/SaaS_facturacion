@@ -7,13 +7,13 @@ export const ESTADO_SESION = ".playwright/estado-sesion.json";
 /** Cliente sembrado que usan las pruebas de facturas. */
 export const CLIENTE_SEMBRADO = {
   nombre: "Gráfica Mediterránea S.L.",
-  nif: "B23456783",
+  nif: "23456783B",
 } as const;
 
 /** Cliente que da de alta la prueba de creación. */
 export const CLIENTE_NUEVO = {
   nombre: "Taller Tipográfico del Norte S.L.",
-  nif: "B76543214",
+  nif: "45678912H",
   email: "hola@tallertipografico.test",
   ciudad: "Bilbao",
   codigoPostal: "48001",

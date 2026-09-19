@@ -76,7 +76,7 @@ export function FormularioEmisor({ emisor }: { emisor: DatosEmisor }) {
           />
         </Campo>
 
-        <Campo etiqueta="NIF, NIE o CIF" htmlFor="emisor-nif" error={error("nif")}>
+        <Campo etiqueta="NIF" htmlFor="emisor-nif" error={error("nif")}>
           <Entrada
             id="emisor-nif"
             className="cifra uppercase"

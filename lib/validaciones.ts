@@ -6,56 +6,26 @@ import { z } from "zod";
 
 import { ESTADOS_FACTURA, TIPOS_IVA } from "@/lib/types";
 
-/* ── Identificadores fiscales españoles ──────────────────────────────── */
+/* ── NIF ─────────────────────────────────────────────────────────────── */
 
-const LETRAS_NIF = "TRWAGMYFPDXBNJZSQVHLCKE";
+export const MENSAJE_NIF = "El NIF debe tener 8 números y una letra.";
 
-/** Valida NIF, NIE y CIF, incluyendo el dígito o la letra de control. */
-export function esIdentificadorFiscalValido(valor: string): boolean {
-  const codigo = valor.trim().toUpperCase().replace(/[\s-]/g, "");
-
-  // NIF: 8 dígitos + letra de control.
-  if (/^\d{8}[A-Z]$/.test(codigo)) {
-    const numero = Number.parseInt(codigo.slice(0, 8), 10);
-    return LETRAS_NIF[numero % 23] === codigo[8];
-  }
-
-  // NIE: X/Y/Z + 7 dígitos + letra de control.
-  if (/^[XYZ]\d{7}[A-Z]$/.test(codigo)) {
-    const prefijo = "XYZ".indexOf(codigo[0]);
-    const numero = Number.parseInt(`${prefijo}${codigo.slice(1, 8)}`, 10);
-    return LETRAS_NIF[numero % 23] === codigo[8];
-  }
-
-  // CIF: letra de organización + 7 dígitos + dígito o letra de control.
-  if (/^[ABCDEFGHJNPQRSUVW]\d{7}[0-9A-J]$/.test(codigo)) {
-    const digitos = codigo.slice(1, 8);
-    let pares = 0;
-    let impares = 0;
-    for (let i = 0; i < digitos.length; i += 1) {
-      const digito = Number.parseInt(digitos[i], 10);
-      if (i % 2 === 0) {
-        const doble = digito * 2;
-        impares += doble > 9 ? doble - 9 : doble;
-      } else {
-        pares += digito;
-      }
-    }
-    const control = (10 - ((pares + impares) % 10)) % 10;
-    const esperadoLetra = "JABCDEFGHI"[control];
-    const recibido = codigo[8];
-    return recibido === String(control) || recibido === esperadoLetra;
-  }
-
-  return false;
+/**
+ * Validación deliberadamente simple: 8 dígitos y una letra. No se comprueba la
+ * letra de control ni se admiten NIE o CIF. Es una decisión de producto para un
+ * proyecto personal; si algún día hiciera falta rigor fiscal, este es el único
+ * sitio que habría que endurecer.
+ */
+export function esNifValido(valor: string): boolean {
+  return /^\d{8}[A-Z]$/.test(valor.trim().toUpperCase().replace(/[\s-]/g, ""));
 }
 
-const identificadorFiscal = z
+const nif = z
   .string()
   .trim()
   .min(1, "El NIF es obligatorio.")
   .transform((valor) => valor.toUpperCase().replace(/[\s-]/g, ""))
-  .refine(esIdentificadorFiscalValido, "El NIF, NIE o CIF no es válido.");
+  .refine(esNifValido, MENSAJE_NIF);
 
 /** `_id` de MongoDB en formato hexadecimal. */
 export const esquemaObjectId = z
@@ -85,7 +55,7 @@ export const esquemaCliente = z.object({
     .trim()
     .min(2, "El nombre debe tener al menos 2 caracteres.")
     .max(120, "Máximo 120 caracteres."),
-  nif: identificadorFiscal,
+  nif,
   email: z.union([z.literal(""), z.email("El correo no es válido.")]).default(""),
   telefono: textoOpcional(30),
   direccion: textoOpcional(160),

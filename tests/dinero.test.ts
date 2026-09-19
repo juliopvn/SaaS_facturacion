@@ -20,7 +20,7 @@ import {
   parsearEurosACentimos,
 } from "../lib/dinero";
 import { formatearEuros } from "../lib/formato";
-import { esIdentificadorFiscalValido } from "../lib/validaciones";
+import { esNifValido } from "../lib/validaciones";
 import type { LineaFactura } from "../lib/types";
 
 describe("dividirRedondeando", () => {
@@ -192,19 +192,20 @@ describe("formato", () => {
   });
 });
 
-describe("identificadores fiscales", () => {
-  it("valida la letra de control de NIF, NIE y CIF", () => {
-    assert.ok(esIdentificadorFiscalValido("12345678Z")); // NIF
-    assert.ok(esIdentificadorFiscalValido("X1234567L")); // NIE
-    assert.ok(esIdentificadorFiscalValido("B23456783")); // CIF con dígito
-    assert.ok(esIdentificadorFiscalValido("G12345674")); // CIF
+describe("NIF", () => {
+  it("acepta 8 números y una letra, sin exigir la letra de control", () => {
+    assert.ok(esNifValido("12345678Z"));
+    assert.ok(esNifValido("12345678A")); // letra de control incorrecta: se admite a propósito
+    assert.ok(esNifValido("12345678a")); // minúscula
+    assert.ok(esNifValido(" 12345678-Z ")); // espacios y guion
   });
 
-  it("rechaza letras de control incorrectas y formatos inventados", () => {
-    assert.equal(esIdentificadorFiscalValido("12345678A"), false);
-    assert.equal(esIdentificadorFiscalValido("X1234567A"), false);
-    assert.equal(esIdentificadorFiscalValido("B23456780"), false);
-    assert.equal(esIdentificadorFiscalValido("ABC"), false);
-    assert.equal(esIdentificadorFiscalValido(""), false);
+  it("rechaza lo que no tiene ese formato", () => {
+    assert.equal(esNifValido("1234567Z"), false); // 7 números
+    assert.equal(esNifValido("123456789Z"), false); // 9 números
+    assert.equal(esNifValido("12345678"), false); // sin letra
+    assert.equal(esNifValido("Z12345678"), false); // letra delante
+    assert.equal(esNifValido("B23456783"), false); // formato CIF: ya no se admite
+    assert.equal(esNifValido(""), false);
   });
 });

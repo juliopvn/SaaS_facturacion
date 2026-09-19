@@ -62,7 +62,7 @@ export function HojaTalonario() {
           <div className="text-right">
             <p className="rotulo">Cliente</p>
             <p className="mt-1 text-sm leading-tight font-medium">Gráfica Mediterránea</p>
-            <p className="cifra text-tinta-tenue text-[0.75rem]">B23456783</p>
+            <p className="cifra text-tinta-tenue text-[0.75rem]">23456783B</p>
           </div>
         </header>
 

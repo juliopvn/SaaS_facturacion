@@ -74,7 +74,7 @@ const CLIENTES: DatosClienteDemo[] = [
   {
     _id: ID_CLIENTES.gráfica,
     nombre: "Gráfica Mediterránea S.L.",
-    nif: "B23456783",
+    nif: "23456783B",
     email: "administracion@graficamediterranea.test",
     telefono: "961 234 567",
     direccion: "Carrer de la Impremta, 14",
@@ -86,7 +86,7 @@ const CLIENTES: DatosClienteDemo[] = [
   {
     _id: ID_CLIENTES.huerta,
     nombre: "Cooperativa La Huerta",
-    nif: "G12345674",
+    nif: "12345674G",
     email: "cuentas@lahuerta.test",
     telefono: "968 445 120",
     direccion: "Camino de los Naranjos, s/n",
@@ -110,7 +110,7 @@ const CLIENTES: DatosClienteDemo[] = [
   {
     _id: ID_CLIENTES.delta,
     nombre: "Sistemas Delta S.A.",
-    nif: "A76543214",
+    nif: "76543214A",
     email: "proveedores@sistemasdelta.test",
     telefono: "915 002 331",
     direccion: "Paseo de la Castellana, 200",

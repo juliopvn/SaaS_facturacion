@@ -17,7 +17,7 @@ const PRESTACIONES = [
   {
     titulo: "Tus clientes, con su NIF validado",
     detalle:
-      "Alta, edición y ficha con el histórico de lo facturado. El NIF, NIE o CIF se comprueba con su letra de control antes de guardar.",
+      "Alta, edición y ficha con el histórico de lo facturado. El NIF se valida antes de guardar para que no se cuele una errata.",
   },
   {
     titulo: "Facturas con varios tipos de IVA",

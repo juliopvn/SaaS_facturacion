@@ -6,7 +6,7 @@ import { leerCuerpo, rutaSegura } from "@/lib/api";
 import { exigirSesion } from "@/lib/autenticacion";
 import { actualizarEmisor } from "@/lib/repositorios/usuarios";
 import type { Usuario } from "@/lib/types";
-import { esIdentificadorFiscalValido } from "@/lib/validaciones";
+import { MENSAJE_NIF, esNifValido } from "@/lib/validaciones";
 
 const esquemaEmisor = z.object({
   nombre: z.string().trim().min(2, "Escribe tu nombre o razón social.").max(120),
@@ -14,10 +14,7 @@ const esquemaEmisor = z.object({
     .string()
     .trim()
     .transform((valor) => valor.toUpperCase().replace(/[\s-]/g, ""))
-    .refine(
-      (valor) => valor === "" || esIdentificadorFiscalValido(valor),
-      "El NIF, NIE o CIF no es válido.",
-    ),
+    .refine((valor) => valor === "" || esNifValido(valor), MENSAJE_NIF),
   direccion: z.string().trim().max(160).default(""),
   ciudad: z.string().trim().max(80).default(""),
   codigoPostal: z

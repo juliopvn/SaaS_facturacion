@@ -176,7 +176,7 @@ lib/
   sesion.ts                 firma de la cookie y tokens de un solo uso
   autenticacion.ts          sesión del lado servidor (`exigirSesion`, …)
   api.ts                    contrato de error y `rutaSegura`
-  validaciones.ts           esquemas Zod, incluida la letra de control del NIF
+  validaciones.ts           esquemas Zod (el NIF es solo 8 números y una letra)
   mailer.ts                 email (MailHog | Resend, por variable de entorno)
   storage.ts                S3 (RustFS | Cloudflare R2, por variable de entorno)
   peticiones.ts             cliente HTTP de los Client Components

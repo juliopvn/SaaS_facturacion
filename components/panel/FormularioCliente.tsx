@@ -103,10 +103,10 @@ export function FormularioCliente({ cliente }: Propiedades) {
           </Campo>
 
           <Campo
-            etiqueta="NIF, NIE o CIF"
+            etiqueta="NIF"
             htmlFor="nif"
             error={error("nif")}
-            ayuda="Se comprueba la letra de control antes de guardar."
+            ayuda="8 números y una letra, por ejemplo 12345678Z."
           >
             <Entrada
               id="nif"
