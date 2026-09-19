@@ -19,6 +19,10 @@ stages:
 default:
   image: node:22-bookworm
   interruptible: true
+  # El único runner activo de la instancia (`cloudrun-ephemeral`) solo acepta
+  # jobs con esta etiqueta. Sin ella los jobs se quedan en `pending` para siempre.
+  tags:
+    - cloudrun
 
 variables:
   # Evita que npm intente escribir fuera del workspace del runner.
