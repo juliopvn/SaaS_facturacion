@@ -1,0 +1,139 @@
+# Pipeline de calidad del SaaS de facturación.
+#
+# El despliegue NO se hace aquí: GitLab replica el repositorio hacia GitHub
+# (push mirror nativo) y Vercel despliega al detectar el cambio en GitHub.
+# Este pipeline es el filtro de calidad de los merge requests: con la rama
+# principal protegida, a `main` solo llega lo que ha pasado por aquí en verde.
+#
+# Si en el futuro se quiere un control más estricto —que el propio pipeline
+# decida qué se replica— habría que desactivar el mirror nativo y añadir una
+# etapa final `mirror-to-github` que haga `git push` solo tras pasar todo,
+# usando un token de GitHub guardado como variable protegida.
+
+stages:
+  - instalar
+  - calidad
+  - pruebas
+  - construir
+
+default:
+  image: node:22-bookworm
+  interruptible: true
+
+variables:
+  # Evita que npm intente escribir fuera del workspace del runner.
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+  NEXT_TELEMETRY_DISABLED: "1"
+
+# Las dependencias se instalan una vez y viajan al resto de jobs por caché.
+.cache_npm: &cache_npm
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - node_modules/
+    - .npm/
+
+instalar:
+  stage: instalar
+  cache:
+    <<: *cache_npm
+    policy: pull-push
+  script:
+    - npm ci --ignore-scripts=false
+  artifacts:
+    expire_in: 1 hour
+    paths:
+      - node_modules/
+
+.job_con_dependencias:
+  cache:
+    <<: *cache_npm
+    policy: pull
+  needs: ["instalar"]
+
+lint:
+  extends: .job_con_dependencias
+  stage: calidad
+  script:
+    - npm run lint
+
+typecheck:
+  extends: .job_con_dependencias
+  stage: calidad
+  script:
+    - npm run typecheck
+
+formato:
+  extends: .job_con_dependencias
+  stage: calidad
+  script:
+    - npm run format:check
+
+test:unit:
+  extends: .job_con_dependencias
+  stage: pruebas
+  script:
+    - npm run test:unit
+
+# La suite E2E corre contra la misma infraestructura que en local, levantada
+# aquí como servicios del runner. El código no cambia: solo las variables de
+# entorno, que es exactamente lo que demuestra `lib/storage.ts` y `lib/mailer.ts`.
+test:e2e:
+  extends: .job_con_dependencias
+  stage: pruebas
+  image: mcr.microsoft.com/playwright:v1.63.0-noble
+  services:
+    - name: mongo:7
+      alias: mongo
+    - name: mailhog/mailhog:v1.0.1
+      alias: mailhog
+    - name: rustfs/rustfs:latest
+      alias: rustfs
+  variables:
+    # Los servicios se resuelven por su alias dentro de la red del job.
+    MONGODB_URI: "mongodb://mongo:27017"
+    MONGODB_DB: "saas_facturacion"
+    MAILHOG_HOST: "mailhog"
+    MAILHOG_PORT: "1025"
+    MAILHOG_API_URL: "http://mailhog:8025"
+    EMAIL_PROVIDER: "mailhog"
+    EMAIL_FROM: "Talonario <facturas@localhost>"
+    AWS_URL: "http://rustfs:9000"
+    AWS_USERNAME: "rustfsadmin"
+    AWS_PASSWORD: "rustfsadmin"
+    AWS_REGION: "us-east-1"
+    AWS_BUCKET: "facturacion"
+    AWS_FORCE_PATH_STYLE: "true"
+    RUSTFS_ACCESS_KEY: "rustfsadmin"
+    RUSTFS_SECRET_KEY: "rustfsadmin"
+    RUSTFS_VOLUMES: "/data"
+    APP_URL: "http://localhost:3000"
+    E2E_BASE_URL: "http://localhost:3000"
+    DEMO_EMAIL: "demo@talonario.test"
+    # Secreto de usar y tirar: esta base se destruye al acabar el job.
+    SESSION_SECRET: "secreto-solo-para-el-pipeline-de-integracion"
+  script:
+    # `globalSetup` valida los servicios y siembra; el `webServer` de Playwright
+    # arranca la aplicación.
+    - npm run test:e2e
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - playwright-report/
+      - test-results/
+
+# Se ejecuta a propósito SIN ninguna variable de entorno: toda la configuración
+# se lee de forma perezosa (`lib/env.ts`), así que compilar no debe requerir ni
+# base de datos ni credenciales. Si alguien rompe esa propiedad, este job falla
+# antes de que lo haga el primer despliegue de Vercel.
+build:
+  extends: .job_con_dependencias
+  stage: construir
+  script:
+    - npm run build
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - .next/

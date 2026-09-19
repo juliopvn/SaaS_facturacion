@@ -1,0 +1,10 @@
+.next
+node_modules
+playwright-report
+test-results
+package-lock.json
+
+# Documentos del enunciado y del proyecto: no se reformatean.
+README.md
+PROMT.md
+AGENTS.md

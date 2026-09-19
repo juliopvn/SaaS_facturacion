@@ -1,0 +1,268 @@
+@import "tailwindcss";
+
+/*
+ * Talonario — sistema visual
+ *
+ * La referencia es el talonario de facturas autocopiativo: la hoja original
+ * blanca, las copias rosa y azul debajo, la tinta violeta del tampón y los
+ * números alineados a la derecha en tipografía mecánica. De ahí salen la
+ * paleta, las reglas de un punto y el uso de la monoespaciada para todo lo
+ * que es cifra.
+ */
+
+@custom-variant oscuro (&:where([data-tema="oscuro"] *), &:where([data-tema="oscuro"]));
+
+:root {
+  color-scheme: light;
+
+  /* Papel y tinta */
+  --fondo: #d9e1e6; /* la copia azul: el plano de la mesa */
+  --papel: #fbfaf7; /* la hoja original */
+  --papel-hundido: #f2efe8; /* zonas rebajadas dentro de la hoja */
+  --tinta: #171a22; /* texto principal */
+  --tinta-media: #5c6270; /* texto secundario */
+  --tinta-tenue: #8d93a0; /* rótulos y anotaciones */
+  --regla: #d5d1c6; /* pauta del papel */
+  --regla-fuerte: #171a22; /* filete que encuadra la hoja */
+
+  /* Copias del talonario */
+  --copia-rosa: #f0c8d2;
+  --copia-azul: #c4d6e3;
+
+  /* Tinta de tampón: la acción, el sello, los enlaces */
+  --sello: #55308c;
+  --sello-vivo: #6c40ab;
+  --sello-tenue: #ede6f7;
+
+  /* Estados */
+  --cobrado: #1f6f4a;
+  --cobrado-tenue: #dcefe4;
+  --aviso: #a8321c;
+  --aviso-tenue: #f7e2dc;
+  --espera: #8a6100;
+  --espera-tenue: #f6ebd2;
+
+  --sombra-hoja: 0 1px 0 rgb(23 26 34 / 0.06), 0 18px 40px -24px rgb(23 26 34 / 0.45);
+}
+
+[data-tema="oscuro"] {
+  color-scheme: dark;
+
+  --fondo: #10131a;
+  --papel: #1b1f29;
+  --papel-hundido: #232833;
+  --tinta: #eceef3;
+  --tinta-media: #a2a9b8;
+  --tinta-tenue: #757d8d;
+  --regla: #323846;
+  --regla-fuerte: #454c5c;
+
+  --copia-rosa: #533944;
+  --copia-azul: #2e4152;
+
+  --sello: #b49af0;
+  --sello-vivo: #c9b5ff;
+  --sello-tenue: #2a2440;
+
+  --cobrado: #6bd39d;
+  --cobrado-tenue: #17332a;
+  --aviso: #f08f74;
+  --aviso-tenue: #3a231d;
+  --espera: #e0b558;
+  --espera-tenue: #33280f;
+
+  --sombra-hoja: 0 1px 0 rgb(0 0 0 / 0.4), 0 18px 40px -24px rgb(0 0 0 / 0.8);
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-papel: var(--papel);
+  --color-papel-hundido: var(--papel-hundido);
+  --color-tinta: var(--tinta);
+  --color-tinta-media: var(--tinta-media);
+  --color-tinta-tenue: var(--tinta-tenue);
+  --color-regla: var(--regla);
+  --color-regla-fuerte: var(--regla-fuerte);
+  --color-copia-rosa: var(--copia-rosa);
+  --color-copia-azul: var(--copia-azul);
+  --color-sello: var(--sello);
+  --color-sello-vivo: var(--sello-vivo);
+  --color-sello-tenue: var(--sello-tenue);
+  --color-cobrado: var(--cobrado);
+  --color-cobrado-tenue: var(--cobrado-tenue);
+  --color-aviso: var(--aviso);
+  --color-aviso-tenue: var(--aviso-tenue);
+  --color-espera: var(--espera);
+  --color-espera-tenue: var(--espera-tenue);
+
+  --font-titular: var(--fuente-archivo), "Helvetica Neue", Arial, sans-serif;
+  --font-texto: var(--fuente-archivo), "Helvetica Neue", Arial, sans-serif;
+  --font-cifra: var(--fuente-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --shadow-hoja: var(--sombra-hoja);
+}
+
+@layer base {
+  * {
+    min-width: 0;
+  }
+
+  body {
+    background-color: var(--fondo);
+    color: var(--tinta);
+    font-family: var(--font-texto);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Los titulares van en Archivo ensanchada: es el gesto tipográfico de la marca. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-titular);
+    font-variation-settings: "wdth" 112;
+    letter-spacing: -0.022em;
+    text-wrap: balance;
+  }
+
+  /* Toda cifra se alinea en columna: mismo ancho de dígito, siempre. */
+  .cifra {
+    font-family: var(--font-cifra);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* Rótulo mecanografiado: cabeceras de tabla, eyebrows, etiquetas de campo. */
+  .rotulo {
+    font-family: var(--font-cifra);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--tinta-tenue);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--sello);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--sello);
+    color: var(--papel);
+  }
+}
+
+@layer components {
+  /* La hoja: el contenedor base de todo el producto. */
+  .hoja {
+    background: var(--papel);
+    border: 1px solid var(--regla-fuerte);
+    box-shadow: var(--sombra-hoja);
+  }
+
+  /* Pauta horizontal del papel de contabilidad. */
+  .pautado {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 31px,
+      var(--regla) 31px,
+      var(--regla) 32px
+    );
+  }
+
+  /* Rótulo de sección: manda sobre las etiquetas de campo, que son del mismo
+     tamaño pero más claras y sin filete. */
+  .rotulo-seccion {
+    font-family: var(--font-cifra);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--tinta);
+    display: block;
+    width: 100%;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--regla-fuerte);
+  }
+
+  /* El sello de tampón: la pieza que da nombre al proyecto. */
+  .sello-tampon {
+    font-family: var(--font-cifra);
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    border: 3px double currentColor;
+    border-radius: 3px;
+    padding: 0.4rem 0.9rem;
+    opacity: 0.82;
+  }
+}
+
+/* ── Entrada en escena del talonario ───────────────────────────────────── */
+
+@keyframes hoja-entra {
+  from {
+    opacity: 0;
+    transform: translateY(22px) rotate(var(--giro-final, 0deg)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--giro-final, 0deg)) scale(1);
+  }
+}
+
+@keyframes sello-cae {
+  from {
+    opacity: 0;
+    transform: rotate(-24deg) scale(1.9);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.82;
+    transform: rotate(-9deg) scale(1);
+  }
+}
+
+.anima-hoja {
+  animation: hoja-entra 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.anima-sello {
+  animation: sello-cae 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.85s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anima-hoja,
+  .anima-sello {
+    animation: none;
+    opacity: 1;
+    transform: rotate(var(--giro-final, 0deg));
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Impresión: la factura sale como documento, sin cromo de aplicación ── */
+
+@media print {
+  .no-imprimir {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  .hoja {
+    border: none;
+    box-shadow: none;
+  }
+}

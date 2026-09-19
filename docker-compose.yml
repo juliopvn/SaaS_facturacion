@@ -1,0 +1,61 @@
+# Infraestructura local del SaaS de facturación.
+#
+#   docker compose up -d      levanta MongoDB, MailHog y RustFS
+#   docker compose down       para los servicios (los datos persisten)
+#   docker compose down -v    los para y borra también los volúmenes
+#
+# Las credenciales de este fichero son de desarrollo y coinciden con las de
+# .env.example a propósito: así `cp .env.example .env.local` funciona sin tocar nada.
+
+name: saas-facturacion
+
+services:
+  # MongoDB 7: las imágenes 8.x se niegan a arrancar sobre el kernel 7.x de
+  # Docker Desktop (SERVER-121912). El proyecto no usa nada exclusivo de 8.x.
+  mongo:
+    image: mongo:7
+    container_name: facturacion-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-datos:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # Buzón de desarrollo: intercepta todo el correo saliente.
+  # SMTP en 1025 (lo usa Nodemailer), interfaz web y API en 8025.
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: facturacion-mailhog
+    restart: unless-stopped
+    # La imagen oficial solo publica amd64; en Apple Silicon corre emulada.
+    platform: linux/amd64
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  # Almacenamiento S3-compatible para los adjuntos de las facturas.
+  # El bucket lo crea la aplicación en el primer uso (lib/storage.ts).
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: facturacion-rustfs
+    restart: unless-stopped
+    ports:
+      - "9001:9000"
+    environment:
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ENABLE: "true"
+    volumes:
+      - rustfs-datos:/data
+
+volumes:
+  mongo-datos:
+  rustfs-datos:
